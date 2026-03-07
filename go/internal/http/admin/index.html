@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Any2API Admin</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      --bg: #f3f3f3;
+      --panel: #ffffff;
+      --panel-muted: #fafafa;
+      --border: #d6d6d6;
+      --border-strong: #1a1a1a;
+      --text: #111111;
+      --muted: #666666;
+      --shadow: 0 14px 36px rgba(0, 0, 0, .08);
+    }
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    button, input, select, textarea { font: inherit; }
+    .hidden { display: none !important; }
+    .flash {
+      position: fixed; top: 18px; left: 50%; transform: translateX(-50%); z-index: 20;
+      min-width: 280px; max-width: calc(100vw - 32px); padding: 12px 16px; border-radius: 14px;
+      border: 1px solid var(--border-strong); background: #ffffff; color: var(--text);
+      box-shadow: var(--shadow); text-align: center; font-size: 14px; font-weight: 700;
+    }
+    .flash.error { background: #111111; color: #ffffff; }
+    .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-card {
+      width: min(420px, 100%); padding: 34px 30px; border-radius: 24px;
+      border: 1px solid var(--border); background: var(--panel); box-shadow: var(--shadow);
+    }
+    .login-badge, .page-kicker, .sidebar-badge, .chip, .tag {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 30px;
+      padding: 0 12px; border-radius: 999px; border: 1px solid var(--border);
+      background: var(--panel-muted); color: var(--text); font-size: 12px; font-weight: 700;
+    }
+    .login-badge, .page-kicker { margin-bottom: 14px; }
+    .login-card h1, .main-header h1, .section-head h2, .sidebar-title, h3 { margin: 0; }
+    .login-card h1 { font-size: 30px; line-height: 1.1; margin-bottom: 8px; text-align: center; }
+    .login-subtitle { margin: 0 0 24px; color: var(--muted); text-align: center; font-size: 14px; line-height: 1.6; }
+    .field { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 8px; font-size: 13px; font-weight: 700; color: var(--muted); }
+    input, select, textarea {
+      width: 100%; border: 1px solid var(--border); border-radius: 14px; background: #ffffff;
+      color: var(--text); padding: 12px 14px; transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: var(--border-strong); box-shadow: 0 0 0 3px rgba(17, 17, 17, .08);
+    }
+    textarea { min-height: 110px; resize: vertical; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    button {
+      width: auto; min-width: 108px; border: 1px solid #111111; border-radius: 12px;
+      background: #111111; color: #ffffff; padding: 11px 16px; font-weight: 700; cursor: pointer;
+    }
+    button.secondary, button.ghost, button.danger { background: #ffffff; color: #111111; border-color: var(--border); }
+    .button-block { width: 100%; }
+    .login-hint { margin: 14px 0 0; color: var(--muted); font-size: 13px; text-align: center; }
+    .admin-shell { min-height: 100vh; display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+    .sidebar {
+      background: #111111; color: #ffffff; padding: 22px 16px; display: flex; flex-direction: column; gap: 18px;
+    }
+    .sidebar-badge { background: transparent; border-color: #2c2c2c; color: #f3f3f3; margin-bottom: 10px; }
+    .sidebar-title { font-size: 20px; font-weight: 800; line-height: 1.2; }
+    .sidebar-subtitle { margin-top: 6px; color: #a7a7a7; font-size: 13px; }
+    .sidebar-nav { display: grid; gap: 8px; }
+    .sidebar-nav button {
+      width: 100%; min-width: 0; text-align: left; justify-content: flex-start; border-color: #2c2c2c;
+      background: transparent; color: #d8d8d8; box-shadow: none;
+    }
+    .sidebar-nav button.active { background: #ffffff; color: #111111; border-color: #ffffff; }
+    .sidebar-footer { margin-top: auto; display: grid; gap: 10px; }
+    .sidebar .chip { width: 100%; background: transparent; color: #ffffff; border-color: #2c2c2c; }
+    .sidebar .chip.success { background: #ffffff; color: #111111; border-color: #ffffff; }
+    .sidebar .ghost { width: 100%; background: #1a1a1a; color: #ffffff; border-color: #2c2c2c; }
+    .admin-main { padding: 24px; }
+    .main-header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 18px; }
+    .main-header h1 { font-size: 30px; line-height: 1.1; margin-bottom: 8px; }
+    .muted { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+    .header-side { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+    .overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .stat-card, .panel, .item {
+      border: 1px solid var(--border); border-radius: 20px; background: #ffffff; box-shadow: var(--shadow);
+    }
+    .stat-card { padding: 16px; }
+    .stat-label { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .stat-value { font-size: 26px; line-height: 1.1; font-weight: 800; color: #111111; }
+    .stat-meta { margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .panel { padding: 20px; }
+    .section-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; margin-bottom: 16px; }
+    .section-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+    .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin-bottom: 14px; }
+    .list { display: grid; gap: 14px; }
+    .item { padding: 18px; }
+    .item-header { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+    .item-title { font-size: 16px; font-weight: 800; line-height: 1.3; }
+    .item-subtitle { margin-top: 6px; color: var(--muted); font-size: 13px; }
+    .item-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .tag.active { background: #111111; color: #ffffff; border-color: #111111; }
+    .empty-state {
+      border: 1px dashed var(--border); border-radius: 18px; background: var(--panel-muted);
+      padding: 24px; text-align: center; color: var(--muted); font-size: 14px;
+    }
+    @media (max-width: 1100px) { .overview-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 920px) {
+      .admin-shell { grid-template-columns: 1fr; }
+      .sidebar { padding: 16px; }
+      .sidebar-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .sidebar-footer { margin-top: 0; }
+      .admin-main { padding: 16px; }
+      .main-header, .section-head, .item-header { flex-direction: column; align-items: stretch; }
+      .header-side { align-items: flex-start; }
+    }
+    @media (max-width: 680px) {
+      .overview-grid, .sidebar-nav { grid-template-columns: 1fr; }
+      button, .actions button { width: 100%; }
+      .actions { display: grid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="flash hidden" id="flash"></div>
+
+  <section class="login-screen" id="login-card">
+    <div class="login-card">
+      <div class="login-badge">ADMIN</div>
+      <h1>管理后台登录</h1>
+      <p class="login-subtitle" id="login-subtitle">只做后台管理，不做介绍页。进入后直接管理 Kiro 和 Grok 账号。</p>
+      <div class="field">
+        <label for="login-password">管理密码</label>
+        <input id="login-password" type="password" placeholder="默认 changeme">
+      </div>
+      <div class="actions">
+        <button class="button-block" id="login-btn" type="button">进入 Admin</button>
+      </div>
+      <p class="login-hint">如果还没改过，默认密码是 <strong>changeme</strong>。</p>
+    </div>
+  </section>
+
+  <section class="admin-shell hidden" id="app-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="sidebar-badge">ADMIN</div>
+        <div class="sidebar-title">Any2API</div>
+        <div class="sidebar-subtitle" id="sidebar-subtitle">账号管理后台</div>
+      </div>
+      <div class="sidebar-nav">
+        <button class="active" data-tab="kiro" type="button">Kiro 账号</button>
+        <button data-tab="grok" type="button">Grok Token</button>
+        <button data-tab="settings" type="button">系统设置</button>
+      </div>
+      <div class="sidebar-footer">
+        <span class="chip" id="session-chip">未登录</span>
+        <button class="ghost" id="logout-btn" type="button">退出登录</button>
+      </div>
+    </aside>
+
+    <main class="admin-main">
+      <div class="main-header">
+        <div>
+          <div class="page-kicker">ADMIN</div>
+          <h1 id="page-title">Kiro 账号</h1>
+          <p class="muted" id="page-subtitle">管理 Kiro 账号与当前激活凭证。</p>
+        </div>
+        <div class="header-side">
+          <span class="chip" id="overview-status">待配置</span>
+        </div>
+      </div>
+
+      <div class="overview-grid" id="status-grid"></div>
+
+      <section class="panel tab-panel" data-panel="kiro">
+        <div class="section-head">
+          <div>
+            <h2>Kiro 账号</h2>
+            <p>新增、导入、切换激活账号。</p>
+          </div>
+          <div class="actions">
+            <button class="secondary" id="kiro-add-btn" type="button">新增账号</button>
+            <button id="kiro-save-btn" type="button">保存账号</button>
+          </div>
+        </div>
+        <div class="row">
+          <div style="grid-column: 1 / -1;">
+            <label for="kiro-import">导入 JSON</label>
+            <textarea id="kiro-import" placeholder='粘贴 Kiro 导出 JSON，例如包含 accounts[0].credentials.accessToken 和 machineId'></textarea>
+          </div>
+        </div>
+        <div class="actions" style="margin-bottom: 16px;">
+          <button class="secondary" id="kiro-import-btn" type="button">从 JSON 导入</button>
+        </div>
+        <div class="list" id="kiro-list"></div>
+      </section>
+
+      <section class="panel tab-panel hidden" data-panel="grok">
+        <div class="section-head">
+          <div>
+            <h2>Grok Token</h2>
+            <p>维护可用 token，并设置当前激活项。</p>
+          </div>
+          <div class="actions">
+            <button class="secondary" id="grok-add-btn" type="button">新增 Token</button>
+            <button id="grok-save-btn" type="button">保存 Token</button>
+          </div>
+        </div>
+        <div class="list" id="grok-list"></div>
+      </section>
+
+      <section class="panel tab-panel hidden" data-panel="settings">
+        <div class="section-head">
+          <div>
+            <h2>系统设置</h2>
+            <p>只保留必要配置，避免喧宾夺主。</p>
+          </div>
+          <div class="actions">
+            <button id="save-settings-btn" type="button">保存设置</button>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="api-key">兼容 API Key</label>
+            <input id="api-key" placeholder="留空可关闭 Bearer 校验">
+          </div>
+          <div>
+            <label for="default-provider">默认 Provider</label>
+            <select id="default-provider">
+              <option value="cursor">cursor</option>
+              <option value="kiro">kiro</option>
+              <option value="grok">grok</option>
+              <option value="orchids">orchids</option>
+            </select>
+          </div>
+          <div>
+            <label for="admin-password">新管理密码</label>
+            <input id="admin-password" type="password" placeholder="不填则保持不变">
+          </div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <script>
+    const state = { currentTab: 'kiro', kiroAccounts: [], grokTokens: [], meta: null, session: null };
+    const $ = (id) => document.getElementById(id);
+    const defaultFeatures = {
+      providers: false,
+      credentials: false,
+      providerState: false,
+      stats: false,
+      logs: false,
+      users: false,
+      configImportExport: false
+    };
+    const tabMeta = {
+      kiro: { title: 'Kiro 账号', subtitle: '管理 Kiro 账号与当前激活凭证。' },
+      grok: { title: 'Grok Token', subtitle: '管理 Grok token 与当前激活项。' },
+      settings: { title: '系统设置', subtitle: '保留必要系统配置，避免页面喧宾夺主。' }
+    };
+
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[char]));
+
+    const toast = (text, isError = false) => {
+      const el = $('flash');
+      if (!text) {
+        el.className = 'flash hidden';
+        el.textContent = '';
+        return;
+      }
+      el.className = `flash${isError ? ' error' : ''}`;
+      el.textContent = text;
+    };
+
+    async function api(path, options = {}) {
+      const response = await fetch(path, {
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        ...options
+      });
+      if (response.status === 401) throw new Error('UNAUTHORIZED');
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || '请求失败');
+      return body;
+    }
+
+    function getFeatures() {
+      return { ...defaultFeatures, ...(state.meta?.features || {}) };
+    }
+
+    function backendLabel() {
+      const language = state.meta?.backend?.language || 'unknown';
+      const version = state.meta?.backend?.version || 'dev';
+      return `${String(language).toUpperCase()} / ${version}`;
+    }
+
+    function authModeLabel() {
+      return state.meta?.auth?.mode || 'unknown';
+    }
+
+    function isTabEnabled(tab) {
+      const features = getFeatures();
+      if (tab === 'settings') return true;
+      if (tab === 'kiro' || tab === 'grok') return !!features.providers && !!features.credentials;
+      return true;
+    }
+
+    function firstAvailableTab() {
+      return ['kiro', 'grok', 'settings'].find((tab) => isTabEnabled(tab)) || 'settings';
+    }
+
+    function setLoggedOutState() {
+      state.session = null;
+      $('login-card').classList.remove('hidden');
+      $('app-shell').classList.add('hidden');
+      $('session-chip').textContent = '未登录';
+      $('session-chip').classList.remove('success');
+    }
+
+    function setAuthenticatedState(session) {
+      state.session = session;
+      $('login-card').classList.add('hidden');
+      $('app-shell').classList.remove('hidden');
+      $('session-chip').textContent = session?.user?.name ? `${session.user.name} · ${session.user.role || 'admin'}` : '已登录';
+      $('session-chip').classList.add('success');
+    }
+
+    function applyFeatureGates() {
+      document.querySelectorAll('[data-tab]').forEach((el) => {
+        const enabled = isTabEnabled(el.dataset.tab);
+        el.classList.toggle('hidden', !enabled);
+      });
+      document.querySelectorAll('[data-panel]').forEach((el) => {
+        const enabled = isTabEnabled(el.dataset.panel);
+        el.classList.toggle('hidden', !enabled || el.dataset.panel !== state.currentTab);
+      });
+      if (!isTabEnabled(state.currentTab)) {
+        state.currentTab = firstAvailableTab();
+      }
+    }
+
+    function applyMeta(meta) {
+      state.meta = meta || null;
+      $('login-subtitle').textContent = `只做后台管理。当前连接 ${backendLabel()}，认证模式 ${authModeLabel()}。`;
+      $('sidebar-subtitle').textContent = `${String(state.meta?.backend?.language || 'unknown').toUpperCase()} backend · ${state.meta?.backend?.version || 'dev'}`;
+      applyFeatureGates();
+      switchTab(state.currentTab || firstAvailableTab());
+    }
+
+    function switchTab(tab) {
+      if (!isTabEnabled(tab)) {
+        tab = firstAvailableTab();
+      }
+      state.currentTab = tab;
+      document.querySelectorAll('[data-tab]').forEach((el) => el.classList.toggle('active', el.dataset.tab === tab));
+      document.querySelectorAll('[data-panel]').forEach((el) => el.classList.toggle('hidden', el.dataset.panel !== tab));
+      $('page-title').textContent = tabMeta[tab]?.title || 'Admin';
+      $('page-subtitle').textContent = tabMeta[tab]?.subtitle || '';
+    }
+
+    function renderStatus(status, settings) {
+      const cards = [
+        ['Backend', backendLabel(), `认证 ${authModeLabel()}`],
+        ['默认 Provider', settings.defaultProvider || 'cursor', '当前默认路由'],
+        ['Kiro 账号', status.providers.kiro.count, status.providers.kiro.configured ? '已配置' : '未配置'],
+        ['Grok Token', status.providers.grok.count, status.providers.grok.configured ? '已配置' : '未配置'],
+        ['API Key', settings.apiKey ? '已开启' : '关闭', settings.apiKey ? 'Bearer 校验中' : '允许无鉴权']
+      ];
+
+      $('status-grid').innerHTML = cards.map(([title, value, meta]) => `
+        <div class="stat-card">
+          <div class="stat-label">${escapeHtml(title)}</div>
+          <div class="stat-value">${escapeHtml(value)}</div>
+          <div class="stat-meta">${escapeHtml(meta)}</div>
+        </div>`).join('');
+
+      $('overview-status').textContent = status.providers.kiro.configured || status.providers.grok.configured ? '已接入' : '待配置';
+    }
+
+    function renderKiroList() {
+      if (!state.kiroAccounts.length) {
+        $('kiro-list').innerHTML = '<div class="empty-state">还没有 Kiro 账号，先新增一条或从 JSON 导入。</div>';
+        return;
+      }
+
+      $('kiro-list').innerHTML = state.kiroAccounts.map((item, index) => `
+        <div class="item">
+          <div class="item-header">
+            <div>
+              <div class="item-title">${escapeHtml(item.name || `Kiro 账号 ${index + 1}`)}</div>
+              <div class="item-subtitle">Machine ID：${escapeHtml(item.machineId || '未设置')}</div>
+              <div class="item-tags">
+                <span class="tag ${item.active ? 'active' : ''}">${item.active ? '当前激活' : '未启用'}</span>
+                <span class="tag">${escapeHtml(item.preferredEndpoint || 'auto endpoint')}</span>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="secondary" data-kind="kiro-active" data-index="${index}" type="button">${item.active ? '已激活' : '设为激活'}</button>
+              <button class="danger" data-kind="kiro-remove" data-index="${index}" type="button">删除</button>
+            </div>
+          </div>
+          <div class="row">
+            <div><label>名称</label><input data-kind="kiro" data-index="${index}" data-field="name" value="${escapeHtml(item.name || '')}"></div>
+            <div><label>Machine ID</label><input data-kind="kiro" data-index="${index}" data-field="machineId" value="${escapeHtml(item.machineId || '')}"></div>
+            <div><label>Endpoint</label><select data-kind="kiro" data-index="${index}" data-field="preferredEndpoint"><option value="">auto</option><option value="amazonq" ${item.preferredEndpoint === 'amazonq' ? 'selected' : ''}>amazonq</option><option value="codewhisperer" ${item.preferredEndpoint === 'codewhisperer' ? 'selected' : ''}>codewhisperer</option></select></div>
+          </div>
+          <div class="row">
+            <div style="grid-column: 1 / -1;"><label>Access Token</label><textarea data-kind="kiro" data-index="${index}" data-field="accessToken">${escapeHtml(item.accessToken || '')}</textarea></div>
+          </div>
+        </div>`).join('');
+    }
+
+    function renderGrokList() {
+      if (!state.grokTokens.length) {
+        $('grok-list').innerHTML = '<div class="empty-state">还没有 Grok Token，先新增一条可用 token。</div>';
+        return;
+      }
+
+      $('grok-list').innerHTML = state.grokTokens.map((item, index) => `
+        <div class="item">
+          <div class="item-header">
+            <div>
+              <div class="item-title">${escapeHtml(item.name || `Grok Token ${index + 1}`)}</div>
+              <div class="item-subtitle">用于 x.ai / Grok 的 cookie token 管理。</div>
+              <div class="item-tags">
+                <span class="tag ${item.active ? 'active' : ''}">${item.active ? '当前激活' : '未启用'}</span>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="secondary" data-kind="grok-active" data-index="${index}" type="button">${item.active ? '已激活' : '设为激活'}</button>
+              <button class="danger" data-kind="grok-remove" data-index="${index}" type="button">删除</button>
+            </div>
+          </div>
+          <div class="row">
+            <div><label>名称</label><input data-kind="grok" data-index="${index}" data-field="name" value="${escapeHtml(item.name || '')}"></div>
+            <div style="grid-column: 1 / -1;"><label>Cookie Token</label><textarea data-kind="grok" data-index="${index}" data-field="cookieToken">${escapeHtml(item.cookieToken || '')}</textarea></div>
+          </div>
+        </div>`).join('');
+    }
+
+    function wireLists() {
+      document.querySelectorAll('[data-kind="kiro"], [data-kind="grok"]').forEach((el) => el.oninput = (event) => {
+        const { kind, index, field } = event.target.dataset;
+        const list = kind === 'kiro' ? state.kiroAccounts : state.grokTokens;
+        list[Number(index)][field] = event.target.value;
+      });
+
+      document.querySelectorAll('[data-kind="kiro-active"]').forEach((el) => el.onclick = () => {
+        state.kiroAccounts.forEach((item, idx) => item.active = idx === Number(el.dataset.index));
+        renderKiroList();
+        wireLists();
+      });
+
+      document.querySelectorAll('[data-kind="grok-active"]').forEach((el) => el.onclick = () => {
+        state.grokTokens.forEach((item, idx) => item.active = idx === Number(el.dataset.index));
+        renderGrokList();
+        wireLists();
+      });
+
+      document.querySelectorAll('[data-kind="kiro-remove"]').forEach((el) => el.onclick = () => {
+        state.kiroAccounts.splice(Number(el.dataset.index), 1);
+        renderKiroList();
+        wireLists();
+      });
+
+      document.querySelectorAll('[data-kind="grok-remove"]').forEach((el) => el.onclick = () => {
+        state.grokTokens.splice(Number(el.dataset.index), 1);
+        renderGrokList();
+        wireLists();
+      });
+    }
+
+    function addKiroAccount(item = {}) {
+      state.kiroAccounts.push({
+        id: item.id || '', name: item.name || '', accessToken: item.accessToken || '',
+        machineId: item.machineId || '', preferredEndpoint: item.preferredEndpoint || '',
+        active: state.kiroAccounts.length === 0 || !!item.active
+      });
+      renderKiroList();
+      wireLists();
+    }
+
+    function addGrokToken(item = {}) {
+      state.grokTokens.push({
+        id: item.id || '', name: item.name || '', cookieToken: item.cookieToken || '',
+        active: state.grokTokens.length === 0 || !!item.active
+      });
+      renderGrokList();
+      wireLists();
+    }
+
+    async function loadAdmin() {
+      const [status, settings, kiro, grok] = await Promise.all([
+        api('/admin/api/status'), api('/admin/api/settings'),
+        api('/admin/api/providers/kiro/accounts'), api('/admin/api/providers/grok/tokens')
+      ]);
+
+      renderStatus(status, settings);
+      $('api-key').value = settings.apiKey || '';
+      $('default-provider').value = settings.defaultProvider || 'cursor';
+      state.kiroAccounts = kiro.accounts || [];
+      state.grokTokens = grok.tokens || [];
+      renderKiroList();
+      renderGrokList();
+      wireLists();
+      applyFeatureGates();
+      switchTab(state.currentTab || firstAvailableTab());
+      setAuthenticatedState(state.session);
+      toast('后台已就绪');
+    }
+
+    async function bootstrapAdmin() {
+      toast('正在连接后台...');
+      try {
+        const meta = await api('/api/admin/meta');
+        applyMeta(meta);
+        if (meta?.auth?.mode !== 'session_cookie') {
+          setLoggedOutState();
+          toast(`当前内置后台暂仅支持 session_cookie，后端返回 ${meta?.auth?.mode || 'unknown'}`, true);
+          return;
+        }
+        try {
+          state.session = await api('/api/admin/auth/session');
+          await loadAdmin();
+          return;
+        } catch (error) {
+          if (error.message !== 'UNAUTHORIZED') throw error;
+        }
+        setLoggedOutState();
+        toast('');
+      } catch (error) {
+        setLoggedOutState();
+        toast(`加载后台失败：${error.message}`, true);
+      }
+    }
+
+    document.querySelectorAll('[data-tab]').forEach((el) => el.onclick = () => switchTab(el.dataset.tab));
+
+    $('login-btn').onclick = async () => {
+      try {
+        await api('/api/admin/auth/login', { method: 'POST', body: JSON.stringify({ password: $('login-password').value }) });
+        state.session = await api('/api/admin/auth/session');
+        await loadAdmin();
+      } catch (error) {
+        toast(error.message === 'UNAUTHORIZED' ? '登录失败，请检查管理密码' : error.message, true);
+      }
+    };
+
+    $('login-password').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') $('login-btn').click();
+    });
+
+    $('logout-btn').onclick = async () => {
+      try {
+        await api('/api/admin/auth/logout', { method: 'POST' });
+      } catch (error) {
+        if (error.message !== 'UNAUTHORIZED') {
+          toast(error.message, true);
+          return;
+        }
+      }
+      setLoggedOutState();
+      toast('已退出登录');
+    };
+
+    $('save-settings-btn').onclick = async () => {
+      try {
+        const payload = {
+          apiKey: $('api-key').value,
+          defaultProvider: $('default-provider').value,
+          adminPassword: $('admin-password').value
+        };
+        await api('/admin/api/settings', { method: 'PUT', body: JSON.stringify(payload) });
+        $('admin-password').value = '';
+        await loadAdmin();
+        toast('系统设置已保存');
+      } catch (error) {
+        toast(error.message, true);
+      }
+    };
+
+    $('kiro-add-btn').onclick = () => addKiroAccount();
+    $('grok-add-btn').onclick = () => addGrokToken();
+
+    $('kiro-import-btn').onclick = () => {
+      try {
+        const parsed = JSON.parse($('kiro-import').value || '{}');
+        const accounts = Array.isArray(parsed.accounts) ? parsed.accounts : [parsed];
+        accounts.forEach((account) => addKiroAccount({
+          name: account.email || account.name || account.id || 'Imported Kiro',
+          accessToken: account.accessToken || account.credentials?.accessToken || '',
+          machineId: account.machineId || account.credentials?.machineId || account.machineID || '',
+          preferredEndpoint: account.preferredEndpoint || ''
+        }));
+        $('kiro-import').value = '';
+        toast('Kiro JSON 已导入');
+      } catch (error) {
+        toast(`Kiro JSON 解析失败: ${error.message}`, true);
+      }
+    };
+
+    $('kiro-save-btn').onclick = async () => {
+      try {
+        await api('/admin/api/providers/kiro/accounts', { method: 'PUT', body: JSON.stringify({ accounts: state.kiroAccounts }) });
+        await loadAdmin();
+        toast('Kiro 账号已保存');
+      } catch (error) {
+        toast(error.message, true);
+      }
+    };
+
+    $('grok-save-btn').onclick = async () => {
+      try {
+        await api('/admin/api/providers/grok/tokens', { method: 'PUT', body: JSON.stringify({ tokens: state.grokTokens }) });
+        await loadAdmin();
+        toast('Grok Token 已保存');
+      } catch (error) {
+        toast(error.message, true);
+      }
+    };
+
+    bootstrapAdmin();
+  </script>
+</body>
+</html>

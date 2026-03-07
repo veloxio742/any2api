@@ -1,0 +1,21 @@
+.DS_Store
+
+# Desktop / frontend
+desktop/node_modules/
+desktop/dist/
+desktop/src-tauri/target/
+
+# Rust
+rust/target/
+
+# Python
+**/__pycache__/
+**/*.pyc
+
+# Runtime data
+go/data/
+python/data/
+rust/data/
+
+# Logs
+*.log
