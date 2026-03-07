@@ -531,13 +531,19 @@ window.addEventListener("DOMContentLoaded", () => {
 
   // ── Kiro / Grok List Rendering ──
 
+  const maskToken = (token: string | undefined): string => {
+    if (!token) return "未设置";
+    if (token.length <= 16) return token.slice(0, 4) + "****";
+    return token.slice(0, 8) + "…" + token.slice(-8);
+  };
+
   const renderKiroList = () => {
     if (!state.kiroAccounts.length) {
       kiroList.innerHTML = '<div class="empty-state">还没有 Kiro 账号，先新增一条或从 JSON 导入。</div>';
       return;
     }
     kiroList.innerHTML = state.kiroAccounts.map((item, i) => `
-      <div class="item-card">
+      <div class="item-card" id="kiro-item-${i}">
         <div class="item-card-header">
           <div>
             <div class="item-card-title">${escapeHtml(item.name || `Kiro 账号 ${i + 1}`)}</div>
@@ -548,11 +554,12 @@ window.addEventListener("DOMContentLoaded", () => {
             </div>
           </div>
           <div class="item-card-actions">
+            <button class="btn btn-sm btn-ghost" data-kind="kiro-toggle" data-index="${i}" type="button">详情</button>
             <button class="btn btn-sm" data-kind="kiro-active" data-index="${i}" type="button">${item.active ? "已激活" : "设为激活"}</button>
             <button class="btn btn-sm btn-danger" data-kind="kiro-remove" data-index="${i}" type="button">删除</button>
           </div>
         </div>
-        <div class="item-card-body">
+        <div class="item-card-body collapsed">
           <div class="form-grid">
             <div><label>名称</label><input data-kind="kiro" data-index="${i}" data-field="name" value="${escapeHtml(item.name || "")}" /></div>
             <div><label>Machine ID</label><input data-kind="kiro" data-index="${i}" data-field="machineId" value="${escapeHtml(item.machineId || "")}" /></div>
@@ -569,19 +576,20 @@ window.addEventListener("DOMContentLoaded", () => {
       return;
     }
     grokList.innerHTML = state.grokTokens.map((item, i) => `
-      <div class="item-card">
+      <div class="item-card" id="grok-item-${i}">
         <div class="item-card-header">
           <div>
             <div class="item-card-title">${escapeHtml(item.name || `Grok Token ${i + 1}`)}</div>
-            <div class="item-card-subtitle">Cookie token 管理</div>
+            <div class="item-card-subtitle">Token: ${escapeHtml(maskToken(item.cookieToken))}</div>
             <div class="item-card-tags"><span class="tag ${item.active ? "active" : ""}">${item.active ? "当前激活" : "未启用"}</span></div>
           </div>
           <div class="item-card-actions">
+            <button class="btn btn-sm btn-ghost" data-kind="grok-toggle" data-index="${i}" type="button">详情</button>
             <button class="btn btn-sm" data-kind="grok-active" data-index="${i}" type="button">${item.active ? "已激活" : "设为激活"}</button>
             <button class="btn btn-sm btn-danger" data-kind="grok-remove" data-index="${i}" type="button">删除</button>
           </div>
         </div>
-        <div class="item-card-body">
+        <div class="item-card-body collapsed">
           <div class="form-grid">
             <div><label>名称</label><input data-kind="grok" data-index="${i}" data-field="name" value="${escapeHtml(item.name || "")}" /></div>
             <div class="full-width"><label>Cookie Token</label><textarea data-kind="grok" data-index="${i}" data-field="cookieToken">${escapeHtml(item.cookieToken || "")}</textarea></div>
@@ -597,6 +605,28 @@ window.addEventListener("DOMContentLoaded", () => {
         const { kind, index, field } = t.dataset;
         const list = kind === "kiro" ? state.kiroAccounts : state.grokTokens;
         if (index && field) (list[Number(index)] as Record<string, unknown>)[field] = t.value;
+      };
+    });
+
+    document.querySelectorAll<HTMLElement>("[data-kind='kiro-toggle']").forEach((el) => {
+      el.onclick = () => {
+        const card = document.getElementById(`kiro-item-${el.dataset.index}`);
+        if (!card) return;
+        const body = card.querySelector(".item-card-body");
+        if (!body) return;
+        body.classList.toggle("collapsed");
+        el.textContent = body.classList.contains("collapsed") ? "详情" : "收起";
+      };
+    });
+
+    document.querySelectorAll<HTMLElement>("[data-kind='grok-toggle']").forEach((el) => {
+      el.onclick = () => {
+        const card = document.getElementById(`grok-item-${el.dataset.index}`);
+        if (!card) return;
+        const body = card.querySelector(".item-card-body");
+        if (!body) return;
+        body.classList.toggle("collapsed");
+        el.textContent = body.classList.contains("collapsed") ? "详情" : "收起";
       };
     });
 

@@ -410,6 +410,8 @@ tbody tr:last-child td { border-bottom: none; }
 .item-card-tags { display: flex; gap: 6px; margin-top: 6px; }
 .item-card-actions { display: flex; gap: 6px; }
 .item-card-body { padding: 16px; }
+.item-card-body.collapsed { display: none; }
+.item-card .token-preview { font-size: 11px; color: var(--text-tertiary); font-family: 'SF Mono', 'Fira Code', monospace; margin-top: 2px; word-break: break-all; }
 
 /* ── Empty State ── */
 .empty-state {
